@@ -132,6 +132,7 @@
     </div>
 
     <!-- קוד הלוגיקה של הטופס (JavaScript) -->
+    <!-- קוד הלוגיקה של הטופס (JavaScript) המעודכן עם חיבור לגוגל -->
     <script>
         // אתחול לוח החתימה
         const canvas = document.getElementById('signature-pad');
@@ -177,7 +178,7 @@
             }
         }
 
-        // טיפול בשליחת הטופס
+        // ===== כאן מתחיל הקוד החדש של השליחה לגוגל =====
         document.getElementById('gemachForm').addEventListener('submit', function(e) {
             e.preventDefault(); // מונע רענון של העמוד
 
@@ -195,20 +196,45 @@
                 specificAmount: document.getElementById('specificAmount').value,
                 borrowerName: document.getElementById('borrowerName').value,
                 borrowerId: document.getElementById('borrowerId').value,
-                signatureImage: signaturePad.toDataURL() // מייצר קובץ תמונה של החתימה (Base64)
+                signatureImage: signaturePad.toDataURL() 
             };
 
-            console.log("נתוני הטופס:", formData);
+            // שינוי כפתור השליחה ל"שולח..." כדי שהלקוח ימתין
+            const submitBtn = document.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.innerHTML = 'שולח נתונים, אנא המתן...';
+            submitBtn.disabled = true;
 
-            /*
-            כדי לקבל את הנתונים למייל או לטבלת אקסל,
-            אפשר להוסיף כאן קריאת FETCH ל-Webhook של Make.com או Formspree
-            */
+            // >>>>> שים לב: כאן אתה מדביק את הכתובת הארוכה שקיבלת מגוגל סקריפט! <<<<<
+            const googleScriptURL = 'https://script.google.com/macros/s/AKfycbwUjCWm-WCK9mr2yW4oeJINw7mN8VkStAOSkq7AmIbLF3HJB3BSQvxF7iDR5rw2948Wdw/exec';
 
-            // החלפת תצוגה למסך הצלחה
-            document.getElementById('formScreen').classList.add('hidden');
-            document.getElementById('successScreen').classList.remove('hidden');
-            window.scrollTo(0,0);
+            // שליחת הנתונים לשרת של גוגל
+            fetch(googleScriptURL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'text/plain;charset=utf-8',
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.status === "success") {
+                    // הצלחה! מעבר למסך תודה
+                    document.getElementById('formScreen').classList.add('hidden');
+                    document.getElementById('successScreen').classList.remove('hidden');
+                    window.scrollTo(0,0);
+                } else {
+                    alert("אירעה שגיאה בשמירת הנתונים.");
+                    submitBtn.innerHTML = originalBtnText;
+                    submitBtn.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error!', error.message);
+                alert("שגיאת תקשורת. אנא נסה שוב.");
+                submitBtn.innerHTML = originalBtnText;
+                submitBtn.disabled = false;
+            });
         });
     </script>
 </body>
